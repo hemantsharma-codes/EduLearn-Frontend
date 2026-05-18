@@ -191,7 +191,35 @@ export class CheckoutComponent implements OnInit {
       next: (orderRes) => {
         const orderData = orderRes.data;
         
-        // 2. Open Razorpay Checkout
+        // [MOCK PAYMENT BYPASS] If backend returns MOCK_KEY, simulate payment instantly
+        if (orderData.keyId === 'MOCK_KEY') {
+           const mockResponse = {
+              razorpay_order_id: orderData.orderId,
+              razorpay_payment_id: 'PAY_MOCK_' + Math.floor(Math.random() * 1000000000),
+              razorpay_signature: 'SIG_MOCK_' + Math.floor(Math.random() * 1000000000)
+           };
+
+           this.paymentService.verifyPayment({
+              razorpayOrderId: mockResponse.razorpay_order_id,
+              razorpayPaymentId: mockResponse.razorpay_payment_id,
+              razorpaySignature: mockResponse.razorpay_signature
+           }).subscribe({
+              next: () => {
+                this.loading = false;
+                this.paymentSuccess = true;
+                setTimeout(() => {
+                  this.router.navigate(['/dashboard/student']);
+                }, 3000);
+              },
+              error: () => {
+                this.loading = false;
+                alert('Mock Payment Verification Failed');
+              }
+           });
+           return;
+        }
+
+        // 2. Open Razorpay Checkout (For Real Keys)
         const options = {
           key: orderData.keyId,
           amount: orderData.amount * 100,
@@ -209,7 +237,6 @@ export class CheckoutComponent implements OnInit {
               next: () => {
                 this.loading = false;
                 this.paymentSuccess = true;
-                // Automatically redirect after 3 seconds
                 setTimeout(() => {
                   this.router.navigate(['/dashboard/student']);
                 }, 3000);
@@ -220,18 +247,9 @@ export class CheckoutComponent implements OnInit {
               }
             });
           },
-          prefill: {
-             name: '',
-             email: '',
-          },
-          theme: {
-            color: '#10b981'
-          },
-          modal: {
-            ondismiss: () => {
-              this.loading = false;
-            }
-          }
+          prefill: { name: '', email: '' },
+          theme: { color: '#10b981' },
+          modal: { ondismiss: () => { this.loading = false; } }
         };
 
         const rzp = new (window as any).Razorpay(options);
