@@ -82,6 +82,72 @@ import { resolveMediaUrl } from '../../core/utils/url.helper';
             <button class="btn btn-primary" routerLink="/dashboard/student">Go to Dashboard</button>
          </div>
       </div>
+
+      <!-- RAZORPAY SIMULATION MODAL -->
+      <div class="success-overlay glass" *ngIf="showRazorpayModal">
+         <div class="razorpay-modal animate-scale-up">
+            <div class="modal-top">
+               <div class="rzp-header">
+                  <div class="rzp-brand">
+                     <span class="rzp-logo">⚡</span>
+                     <span class="rzp-name">Razorpay Secure</span>
+                  </div>
+                  <button class="rzp-close" (click)="showRazorpayModal = false" [disabled]="processingMockPay">✕</button>
+               </div>
+               <div class="rzp-merchant">
+                  <h3>EduLearn Technologies</h3>
+                  <p>Order ID: {{ mockOrderData?.orderId }}</p>
+               </div>
+               <div class="rzp-amount">₹ {{ course?.price | number }}</div>
+            </div>
+            
+            <div class="modal-body" *ngIf="!processingMockPay">
+               <p class="section-title">Select Payment Method</p>
+               <div class="payment-methods">
+                  <label class="method-option" [class.selected]="razorpayMethod === 'upi'">
+                     <input type="radio" name="method" [(ngModel)]="razorpayMethod" value="upi" hidden>
+                     <span class="m-icon">📱</span>
+                     <div class="m-details">
+                        <h4>UPI / QR</h4>
+                        <p>Google Pay, PhonePe, Paytm</p>
+                     </div>
+                     <span class="check" *ngIf="razorpayMethod === 'upi'">✓</span>
+                  </label>
+
+                  <label class="method-option" [class.selected]="razorpayMethod === 'card'">
+                     <input type="radio" name="method" [(ngModel)]="razorpayMethod" value="card" hidden>
+                     <span class="m-icon">💳</span>
+                     <div class="m-details">
+                        <h4>Credit / Debit Card</h4>
+                        <p>Visa, Mastercard, RuPay</p>
+                     </div>
+                     <span class="check" *ngIf="razorpayMethod === 'card'">✓</span>
+                  </label>
+
+                  <label class="method-option" [class.selected]="razorpayMethod === 'nb'">
+                     <input type="radio" name="method" [(ngModel)]="razorpayMethod" value="nb" hidden>
+                     <span class="m-icon">🏦</span>
+                     <div class="m-details">
+                        <h4>Net Banking</h4>
+                        <p>HDFC, SBI, ICICI, Axis</p>
+                     </div>
+                     <span class="check" *ngIf="razorpayMethod === 'nb'">✓</span>
+                  </label>
+               </div>
+
+               <div class="rzp-footer">
+                  <button class="rzp-pay-btn" (click)="confirmRazorpayMockPay()">Pay ₹ {{ course?.price | number }}</button>
+                  <div class="rzp-secure-badge">🔒 Secured by Razorpay</div>
+               </div>
+            </div>
+
+            <div class="modal-body processing-box" *ngIf="processingMockPay">
+               <div class="rzp-spinner"></div>
+               <h3>Connecting to Bank...</h3>
+               <p>Please do not refresh or close this window.</p>
+            </div>
+         </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -136,6 +202,36 @@ import { resolveMediaUrl } from '../../core/utils/url.helper';
     .success-card p { color: #94a3b8; margin-bottom: 2.5rem; font-size: 1.1rem; }
     .btn-primary { padding: 1rem 2rem; background: #10b981; color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
+    /* RAZORPAY MODAL */
+    .razorpay-modal { width: 100%; max-width: 440px; background: #fff; border-radius: 20px; overflow: hidden; color: #1e293b; box-shadow: 0 20px 60px rgba(0,0,0,0.5); font-family: 'Inter', sans-serif; text-align: left; }
+    .modal-top { background: #0c1b2a; color: #fff; padding: 1.5rem 2rem; position: relative; }
+    .rzp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .rzp-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.1rem; color: #3b82f6; }
+    .rzp-logo { background: #3b82f6; color: #fff; width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+    .rzp-close { background: none; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer; }
+    .rzp-merchant h3 { font-size: 1.2rem; margin: 0 0 0.2rem; color: #fff; }
+    .rzp-merchant p { color: #94a3b8; font-size: 0.8rem; margin: 0; }
+    .rzp-amount { font-size: 2rem; font-weight: 800; color: #fff; margin-top: 1rem; }
+    
+    .modal-body { padding: 2rem; background: #f8fafc; }
+    .section-title { font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 1rem; }
+    .payment-methods { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 2rem; }
+    .method-option { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; cursor: pointer; transition: all 0.2s; position: relative; }
+    .method-option:hover { border-color: #cbd5e1; }
+    .method-option.selected { border-color: #3b82f6; background: rgba(59, 130, 246, 0.03); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1); }
+    .m-icon { font-size: 1.8rem; }
+    .m-details h4 { margin: 0 0 0.2rem; font-size: 0.95rem; color: #1e293b; font-weight: 700; }
+    .m-details p { margin: 0; font-size: 0.75rem; color: #64748b; }
+    .method-option .check { position: absolute; right: 1rem; color: #3b82f6; font-weight: 800; font-size: 1.2rem; }
+    
+    .rzp-pay-btn { width: 100%; padding: 1.2rem; background: #3b82f6; color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: 0.2s; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3); }
+    .rzp-pay-btn:hover { background: #2563eb; transform: translateY(-2px); }
+    .rzp-secure-badge { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; }
+    
+    .processing-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; }
+    .rzp-spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1.5rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .animate-fade-in { animation: fadeIn 0.5s ease-out; }
     .animate-scale-up { animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -143,7 +239,7 @@ import { resolveMediaUrl } from '../../core/utils/url.helper';
 
     @media (max-width: 850px) {
       .checkout-card { grid-template-columns: 1fr; }
-      .summary-section { order: -1; border-left: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+      .summary-section { order: -1; border-left: none; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
     }
   `]
 })
@@ -153,6 +249,12 @@ export class CheckoutComponent implements OnInit {
   loading = false;
   paymentSuccess = false;
   cardData = { name: '', number: '', expiry: '', cvc: '' };
+
+  // Razorpay Simulation State
+  showRazorpayModal = false;
+  mockOrderData: any = null;
+  razorpayMethod = 'upi';
+  processingMockPay = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -191,31 +293,11 @@ export class CheckoutComponent implements OnInit {
       next: (orderRes) => {
         const orderData = orderRes.data;
         
-        // [MOCK PAYMENT BYPASS] If backend returns MOCK_KEY, simulate payment instantly
+        // [MOCK PAYMENT BYPASS] If backend returns MOCK_KEY, trigger premium Razorpay simulation modal
         if (orderData.keyId === 'MOCK_KEY') {
-           const mockResponse = {
-              razorpay_order_id: orderData.orderId,
-              razorpay_payment_id: 'PAY_MOCK_' + Math.floor(Math.random() * 1000000000),
-              razorpay_signature: 'SIG_MOCK_' + Math.floor(Math.random() * 1000000000)
-           };
-
-           this.paymentService.verifyPayment({
-              razorpayOrderId: mockResponse.razorpay_order_id,
-              razorpayPaymentId: mockResponse.razorpay_payment_id,
-              razorpaySignature: mockResponse.razorpay_signature
-           }).subscribe({
-              next: () => {
-                this.loading = false;
-                this.paymentSuccess = true;
-                setTimeout(() => {
-                  this.router.navigate(['/dashboard/student']);
-                }, 3000);
-              },
-              error: () => {
-                this.loading = false;
-                alert('Mock Payment Verification Failed');
-              }
-           });
+           this.mockOrderData = orderData;
+           this.showRazorpayModal = true;
+           this.loading = false;
            return;
         }
 
@@ -260,5 +342,35 @@ export class CheckoutComponent implements OnInit {
         alert('Failed to initiate payment. Please try again.');
       }
     });
+  }
+
+  confirmRazorpayMockPay() {
+    this.processingMockPay = true;
+    const mockResponse = {
+       razorpay_order_id: this.mockOrderData.orderId,
+       razorpay_payment_id: 'PAY_MOCK_' + Math.floor(Math.random() * 1000000000),
+       razorpay_signature: 'SIG_MOCK_' + Math.floor(Math.random() * 1000000000)
+    };
+
+    setTimeout(() => {
+       this.paymentService.verifyPayment({
+          razorpayOrderId: mockResponse.razorpay_order_id,
+          razorpayPaymentId: mockResponse.razorpay_payment_id,
+          razorpaySignature: mockResponse.razorpay_signature
+       }).subscribe({
+          next: () => {
+            this.processingMockPay = false;
+            this.showRazorpayModal = false;
+            this.paymentSuccess = true;
+            setTimeout(() => {
+              this.router.navigate(['/dashboard/student']);
+            }, 3000);
+          },
+          error: () => {
+            this.processingMockPay = false;
+            alert('Mock Payment Verification Failed');
+          }
+       });
+    }, 2000); // Simulate Razorpay bank processing delay
   }
 }
