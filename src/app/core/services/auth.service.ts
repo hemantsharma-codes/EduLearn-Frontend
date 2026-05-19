@@ -33,6 +33,16 @@ export class AuthService {
     );
   }
 
+  googleLoginMock(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/google-login-mock`, data).pipe(
+      tap((response: any) => {
+        if (response.success && response.data.accessToken) {
+          this.setSession(response.data);
+        }
+      })
+    );
+  }
+
   handleExternalLogin(token: string): Observable<any> {
     localStorage.setItem('token', token);
     return this.getProfile().pipe(
